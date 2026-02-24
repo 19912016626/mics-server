@@ -1,15 +1,3 @@
-{
-  "name": "mics-server",
-  "version": "3.0.0",
-  "description": "Mics Messenger Backend",
-  "main": "server.js",
-  "scripts": {
-    "start": "server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2",
-    "cors": "^2.8.5"
-  }
+"scripts": {
+  "start": "node server.js"
 }
-
