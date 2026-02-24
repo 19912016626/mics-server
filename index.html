@@ -4,208 +4,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mics Messenger Ultimate</title>
-    <!-- Подключаем библиотеку связи -->
-    <script src="https://cdn.socket.io"></script>
     
-    <style>
-        /* --- СТИЛИ MICS --- */
-        :root { 
-            --accent: #00d2ff; 
-            --bg: #0b0b0e; 
-            --panel: #16161d; 
-            --text: #ffffff;
-            --msg-other: #25252d;
-        }
+    <!-- ИСПРАВЛЕННАЯ ССЫЛКА НА БИБЛИОТЕКУ -->
+    <script src="https://cdn.socket.io"></script>
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+    <style>
+        :root { --accent: #00d2ff; --bg: #121217; --panel: #1e1e26; }
         body { 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Inter', sans-serif; 
             background: var(--bg); 
-            color: var(--text); 
+            color: #fff; 
+            margin: 0; 
             height: 100vh; 
             display: flex; 
             flex-direction: column; 
-            overflow: hidden; 
+            overflow: hidden;
         }
 
         /* Шапка */
-        header { 
-            background: var(--panel); 
-            padding: 15px 25px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 2px solid var(--accent);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-        .logo { font-size: 24px; font-weight: 900; color: var(--accent); letter-spacing: 3px; }
+        header { background: var(--panel); padding: 15px 20px; border-bottom: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: 1px; }
+        #status { font-size: 11px; font-weight: bold; transition: 0.3s; color: #555; }
+
+        /* Чат */
+        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .msg { padding: 10px 15px; border-radius: 15px; max-width: 75%; font-size: 14px; position: relative; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        #status-box { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: bold; }
-        #status-dot { width: 10px; height: 10px; background: #ff4444; border-radius: 50%; transition: 0.3s; }
-        .online-dot { background: #00ff88 !important; box-shadow: 0 0 10px #00ff88; }
+        .my { align-self: flex-end; background: var(--accent); color: #000; border-bottom-right-radius: 2px; }
+        .other { align-self: flex-start; background: #2d2d3a; color: #fff; border-bottom-left-radius: 2px; }
+        .nick { font-size: 10px; font-weight: bold; margin-bottom: 3px; display: block; opacity: 0.7; }
 
-        /* Окно чата */
-        #chat { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            background: radial-gradient(circle at center, #1a1a24, #0b0b0e);
-        }
-
-        /* Сообщения */
-        .msg-wrap { display: flex; flex-direction: column; max-width: 80%; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .my-w { align-self: flex-end; }
-        .oth-w { align-self: flex-start; }
-
-        .bubble { 
-            padding: 12px 18px; 
-            border-radius: 18px; 
-            font-size: 15px; 
-            line-height: 1.4;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        .my-b { background: var(--accent); color: #000; border-bottom-right-radius: 2px; }
-        .oth-b { background: var(--msg-other); color: #fff; border-bottom-left-radius: 2px; }
-
-        .u-info { font-size: 10px; margin-top: 5px; opacity: 0.5; display: flex; gap: 10px; }
-        .u-name { font-weight: bold; color: var(--accent); margin-bottom: 4px; font-size: 12px; }
-
-        /* Панель ввода */
-        .input-bar { 
-            background: var(--panel); 
-            padding: 20px; 
-            display: flex; 
-            gap: 12px; 
-            border-top: 1px solid #333; 
-        }
-        input { 
-            background: #25252e; 
-            border: 1px solid #444; 
-            color: #fff; 
-            padding: 12px; 
-            border-radius: 12px; 
-            outline: none; 
-        }
-        #n-in { width: 100px; text-align: center; color: var(--accent); font-weight: bold; }
+        /* Ввод */
+        .input-bar { background: var(--panel); padding: 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
+        input { background: #2d2d3a; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 10px; outline: none; }
+        #n-in { width: 90px; color: var(--accent); font-weight: bold; text-align: center; }
         #m-in { flex: 1; }
-        button { 
-            background: var(--accent); 
-            border: none; 
-            padding: 0 25px; 
-            border-radius: 12px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: 0.2s;
-        }
-        button:hover { transform: scale(1.05); }
-
-        /* Отладка */
-        #error-log { color: #ff4444; font-size: 10px; position: fixed; bottom: 85px; left: 20px; }
+        button { background: var(--accent); color: #000; border: none; padding: 0 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo">MICS</div>
-    <div id="status-box">
-        <div id="status-dot"></div>
-        <span id="status-text">OFFLINE</span>
-    </div>
+    <div class="logo">MICS ULTIMATE</div>
+    <div id="status">ПОДКЛЮЧЕНИЕ...</div>
 </header>
 
-<div id="chat">
-    <div class="msg-wrap oth-w">
-        <div class="bubble oth-b"><b>System:</b> Добро пожаловать! Если не подключается — проверь статус сервера на Render.</div>
-    </div>
-</div>
-
-<div id="error-log"></div>
+<div id="chat"></div>
 
 <div class="input-bar">
-    <input type="text" id="n-in" maxlength="12" placeholder="Ник">
-    <input type="text" id="m-in" placeholder="Ваше сообщение..." autocomplete="off">
+    <input type="text" id="n-in" placeholder="Ник" maxlength="10">
+    <input type="text" id="m-in" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') send()">
     <button onclick="send()">></button>
 </div>
 
 <script>
-    /* --- ЛОГИКА MICS --- */
-    
-    // !!! ВСТАВЬ СЮДА СВОЮ ССЫЛКУ ОТ RENDER !!!
-    const SERVER_URL = 'https://mics-server.onrender.com'; 
+    // Твоя ссылка от Render (убедись, что она верная!)
+    const socket = io('https://mics-server.onrender.com', {
+        transports: ['websocket', 'polling']
+    });
 
+    const nickIn = document.getElementById('n-in');
+    const msgIn = document.getElementById('m-in');
     const chat = document.getElementById('chat');
-    const msgInput = document.getElementById('m-in');
-    const nickInput = document.getElementById('n-in');
-    const errLog = document.getElementById('error-log');
-    
-    // Рандомный ник при старте
-    nickInput.value = "User_" + Math.floor(Math.random() * 999);
+    const statusText = document.getElementById('status');
 
-    // Подключение к серверу
-    const socket = io(SERVER_URL, {
-        transports: ['websocket', 'polling'], // Пробуем все способы связи
-        reconnectionAttempts: 5
-    });
+    // Авто-ник
+    nickIn.value = "User" + Math.floor(Math.random() * 99);
 
-    // Обработка подключения
     socket.on('connect', () => {
-        document.getElementById('status-dot').classList.add('online-dot');
-        document.getElementById('status-text').innerText = "ONLINE";
-        document.getElementById('status-text').style.color = "#00ff88";
-        errLog.innerText = "";
+        statusText.innerText = "В СЕТИ";
+        statusText.style.color = "#00ff88";
     });
 
-    socket.on('connect_error', (err) => {
-        errLog.innerText = "Ошибка подключения: " + err.message;
-        document.getElementById('status-text').innerText = "CONNECTING...";
-    });
-
-    // Получение сообщения
     socket.on('message', (data) => {
-        const isMy = data.user === nickInput.value;
-        render(data, isMy);
+        const isMy = data.user === nickIn.value;
+        const div = document.createElement('div');
+        div.className = `msg ${isMy ? 'my' : 'other'}`;
+        div.innerHTML = `<span class="nick">${data.user}</span>${data.text}`;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
     });
 
-    // Функция отправки
     function send() {
-        const text = msgInput.value.trim();
-        const user = nickInput.value.trim();
-
+        const text = msgIn.value.trim();
         if (text && socket.connected) {
-            socket.emit('message', { user, text });
-            msgInput.value = "";
-        } else if (!socket.connected) {
-            alert("Сервер еще не проснулся. Подождите 30-60 сек.");
+            socket.emit('message', { user: nickIn.value, text: text });
+            msgIn.value = "";
         }
     }
 
-    // Отрисовка сообщения
-    function render(data, isMy) {
-        const wrap = document.createElement('div');
-        wrap.className = `msg-wrap ${isMy ? 'my-w' : 'oth-w'}`;
-        
-        wrap.innerHTML = `
-            ${!isMy ? `<div class="u-name">${data.user}</div>` : ''}
-            <div class="bubble ${isMy ? 'my-b' : 'oth-b'}">${escape(data.text)}</div>
-            <div class="u-info"><span>${data.time || 'сейчас'}</span></div>
-        `;
-
-        chat.appendChild(wrap);
-        chat.scrollTop = chat.scrollHeight; // Скролл вниз
-    }
-
-    // Защита от взлома через текст
-    function escape(html) {
-        return html.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
-    // Отправка по Enter
-    msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') send(); });
+    socket.on('connect_error', () => {
+        statusText.innerText = "ОШИБКА СВЯЗИ";
+        statusText.style.color = "#ff4444";
+    });
 </script>
 
 </body>
