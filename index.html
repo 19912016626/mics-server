@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Mics Messenger</title>
+    <!-- Подключаем библиотеку для связи с сервером -->
+    <script src="https://cdn.socket.io"></script>
+    <style>
+        :root { --main: #00d2ff; --bg: #0f0f12; --panel: #1a1a1f; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Шапка */
+        #header { background: var(--panel); padding: 15px; text-align: center; border-bottom: 2px solid var(--main); font-weight: bold; letter-spacing: 2px; color: var(--main); }
+        
+        /* Окно чата */
+        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 15px; border-radius: 12px; max-width: 75%; position: relative; line-height: 1.4; animation: slide 0.2s ease; }
+        @keyframes slide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        
+        .my { align-self: flex-end; background: var(--main); color: black; border-bottom-right-radius: 2px; }
+        .other { align-self: flex-start; background: #2d2d35; border-bottom-left-radius: 2px; }
+        .nick { font-size: 10px; font-weight: bold; margin-bottom: 4px; opacity: 0.6; display: block; }
+
+        /* Поле ввода */
+        .input-area { padding: 20px; background: var(--panel); display: flex; gap: 10px; border-top: 1px solid #333; }
+        input { background: #25252b; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; outline: none; transition: 0.3s; }
+        #nickInput { width: 100px; }
+        #msgInput { flex: 1; }
+        input:focus { border-color: var(--main); }
+        button { background: var(--main); color: black; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        #status { font-size: 10px; color: #555; position: absolute; top: 20px; right: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="header">MICS MESSENGER</div>
+<div id="status">Подключение...</div>
+
+<div id="chat">
+    <div class="msg other"><span class="nick">System</span>Добро пожаловать в Mics! Напиши свой ник и начни общение.</div>
+</div>
+
+<div class="input-area">
+    <input type="text" id="nickInput" placeholder="Ник" value="User">
+    <input type="text" id="msgInput" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') send()">
+    <button onclick="send()">></button>
+</div>
+
+<script>
+    // ПОДКЛЮЧЕНИЕ К ТВОЕМУ СЕРВЕРУ
+    const socket = io('https://mics-server.onrender.com');
+
+    socket.on('connect', () => {
+        document.getElementById('status').innerText = "В СЕТИ";
+        document.getElementById('status').style.color = "#00ff88";
+    });
+
+    // Слушаем входящие сообщения
+    socket.on('message', (data) => {
+        const isMy = data.user === document.getElementById('nickInput').value;
+        addMessage(data.user, data.text, isMy ? 'my' : 'other');
+    });
+
+    function send() {
+        const nick = document.getElementById('nickInput').value.trim() || "Аноним";
+        const input = document.getElementById('msgInput');
+        const text = input.value.trim();
+
+        if (text) {
+            // Отправляем на сервер
+            socket.emit('message', { user: nick, text: text });
+            input.value = "";
+        }
+    }
+
+    function addMessage(user, text, type) {
+        const chat = document.getElementById('chat');
+        const div = document.createElement('div');
+        div.className = `msg ${type}`;
+        div.innerHTML = `<span class="nick">${user}</span>${text}`;
+        chat.appendChild(div);
+        
+        // Автопрокрутка вниз
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    socket.on('disconnect', () => {
+        document.getElementById('status').innerText = "ОФФЛАЙН";
+        document.getElementById('status').style.color = "#ff4444";
+    });
+</script>
+
+</body>
+</html>
