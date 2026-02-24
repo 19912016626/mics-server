@@ -1,85 +1,106 @@
-// main.js - Весь ваш HTML перенесен в JS
-document.body.innerHTML = `
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: "*" }
+});
+
+// Раздаем HTML напрямую
+app.get('/', (req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mics Messenger Ultimate</title>
+    <script src="https://cdn.socket.io"></script>
+    <style>
+        :root { --accent: #00d2ff; --bg: #0b0b0e; --panel: #16161d; --text: #ffffff; --msg-other: #25252d; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        header { background: var(--panel); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); }
+        .logo-box { display: flex; align-items: center; gap: 10px; }
+        .logo { font-size: 24px; font-weight: 900; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; }
+        #status-dot { width: 10px; height: 10px; background: #ff4444; border-radius: 50%; }
+        #chat { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 15px; }
+        .msg-group { display: flex; flex-direction: column; max-width: 80%; }
+        .my-group { align-self: flex-end; }
+        .other-group { align-self: flex-start; }
+        .bubble { padding: 12px 16px; border-radius: 20px; font-size: 15px; }
+        .my-bubble { background: linear-gradient(135deg, var(--accent), #3a7bd5); color: #000; }
+        .other-bubble { background: var(--msg-other); color: #fff; }
+        .input-area { background: var(--panel); padding: 20px; display: flex; gap: 12px; }
+        input { background: #25252e; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 12px; outline: none; }
+        #nick-input { width: 100px; }
+        #msg-input { flex: 1; }
+        button { background: var(--accent); border: none; width: 48px; border-radius: 14px; cursor: pointer; }
+    </style>
+</head>
+<body>
 <header>
     <div class="logo-box">
         <div class="logo">Mics</div>
         <div id="status-dot"></div>
         <div id="status-text">ПОДКЛЮЧЕНИЕ...</div>
     </div>
-    <div style="font-size: 10px; opacity: 0.4;">ULTIMATE v3</div>
 </header>
-
-<div id="chat">
-    <div class="msg-group other-group">
-        <div class="bubble other-bubble">
-            <b>Система:</b> Ожидайте активации сервера (до 60 сек). Если индикатор станет зеленым — вы в сети!
-        </div>
-    </div>
-</div>
-
-<div id="debug"></div>
-
+<div id="chat"></div>
 <div class="input-area">
     <input type="text" id="nick-input" placeholder="Ник" maxlength="12">
     <input type="text" id="msg-input" placeholder="Сообщение..." autocomplete="off">
-    <button id="send-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-    </button>
+    <button onclick="sendMsg()">➤</button>
 </div>
-`;
 
-// ЛОГИКА ПОДКЛЮЧЕНИЯ
-const SERVER_URL = 'https://mics-server-1.onrender.com';
-const socket = io(SERVER_URL, { 
-    transports: ['websocket', 'polling'],
-    reconnectionAttempts: 10 
-});
+<script>
+    const socket = io();
+    const chat = document.getElementById('chat');
+    const msgInput = document.getElementById('msg-input');
+    const nickInput = document.getElementById('nick-input');
+    const statusDot = document.getElementById('status-dot');
 
-const chat = document.getElementById('chat');
-const msgInput = document.getElementById('msg-input');
-const nickInput = document.getElementById('nick-input');
-const statusDot = document.getElementById('status-dot');
-const statusText = document.getElementById('status-text');
-const sendBtn = document.getElementById('send-btn');
+    nickInput.value = "User_" + Math.floor(Math.random() * 999);
 
-nickInput.value = "User_" + Math.floor(Math.random() * 999);
+    socket.on('connect', () => {
+        statusDot.style.background = "#00ff88";
+        document.getElementById('status-text').innerText = "В СЕТИ";
+    });
 
-socket.on('connect', () => {
-    statusDot.style.background = "#00ff88";
-    statusDot.style.boxShadow = "0 0 10px #00ff88";
-    statusText.innerText = "В СЕТИ";
-});
+    socket.on('message', (data) => {
+        const isMy = data.user === nickInput.value;
+        const group = document.createElement('div');
+        group.className = 'msg-group ' + (isMy ? 'my-group' : 'other-group');
+        group.innerHTML = '<div class="bubble ' + (isMy ? 'my-bubble' : 'other-bubble') + '"><b>' + data.user + ':</b> ' + data.text + '</div>';
+        chat.appendChild(group);
+        chat.scrollTop = chat.scrollHeight;
+    });
 
-socket.on('message', (data) => {
-    const isMy = data.user === nickInput.value;
-    render(data, isMy);
-});
-
-function sendMsg() {
-    const text = msgInput.value.trim();
-    const user = nickInput.value.trim() || "MicsUser";
-    if (text && socket.connected) {
-        socket.emit('message', { user, text });
-        msgInput.value = "";
+    function sendMsg() {
+        const text = msgInput.value.trim();
+        if (text) {
+            socket.emit('message', { user: nickInput.value, text });
+            msgInput.value = "";
+        }
     }
-}
+    msgInput.onkeypress = (e) => { if(e.key === 'Enter') sendMsg() };
+</script>
+</body>
+</html>
+    `);
+});
 
-function render(data, isMy) {
-    const group = document.createElement('div');
-    group.className = `msg-group ${isMy ? 'my-group' : 'other-group'}`;
-    group.innerHTML = `
-        ${!isMy ? `<div class="sender-name">${data.user}</div>` : ''}
-        <div class="bubble ${isMy ? 'my-bubble' : 'other-bubble'}">${escapeHTML(data.text)}</div>
-        <div class="time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-    `;
-    chat.appendChild(group);
-    chat.scrollTop = chat.scrollHeight;
-}
+// Логика чата
+io.on('connection', (socket) => {
+    socket.on('message', (data) => {
+        io.emit('message', data); // Отправляем всем
+    });
+});
 
-function escapeHTML(str) {
-    return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-}
-
-// Слушатели событий
-sendBtn.onclick = sendMsg;
-msgInput.onkeypress = (e) => { if(e.key === 'Enter') sendMsg() };
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, () => {
+    console.log('Server is running on port ' + PORT);
+});
