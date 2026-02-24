@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mics Messenger Ultimate</title>
+    <!-- Подключаем библиотеку связи -->
     <script src="https://cdn.socket.io"></script>
+    
     <style>
+        /* --- СТИЛИ MICS --- */
         :root { 
             --accent: #00d2ff; 
-            --accent-dark: #009ec2;
             --bg: #0b0b0e; 
             --panel: #16161d; 
             --text: #ffffff;
@@ -16,9 +18,17 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
 
-        /* Верхняя панель */
+        /* Шапка */
         header { 
             background: var(--panel); 
             padding: 15px 25px; 
@@ -27,216 +37,175 @@
             align-items: center; 
             border-bottom: 2px solid var(--accent);
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            z-index: 10;
         }
-        .logo-box { display: flex; align-items: center; gap: 10px; }
-        .logo { font-size: 24px; font-weight: 900; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; }
-        #status-dot { width: 10px; height: 10px; background: #ff4444; border-radius: 50%; box-shadow: 0 0 5px #ff4444; }
-        #status-text { font-size: 11px; font-weight: bold; opacity: 0.6; margin-left: 5px; }
+        .logo { font-size: 24px; font-weight: 900; color: var(--accent); letter-spacing: 3px; }
+        
+        #status-box { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: bold; }
+        #status-dot { width: 10px; height: 10px; background: #ff4444; border-radius: 50%; transition: 0.3s; }
+        .online-dot { background: #00ff88 !important; box-shadow: 0 0 10px #00ff88; }
 
-        /* Контейнер чата */
+        /* Окно чата */
         #chat { 
             flex: 1; 
             overflow-y: auto; 
-            padding: 25px; 
+            padding: 20px; 
             display: flex; 
             flex-direction: column; 
             gap: 15px; 
-            background: radial-gradient(circle at top right, #1a1a24, #0b0b0e);
+            background: radial-gradient(circle at center, #1a1a24, #0b0b0e);
         }
 
         /* Сообщения */
-        .msg-group { display: flex; flex-direction: column; max-width: 80%; animation: msgIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
-        @keyframes msgIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .msg-wrap { display: flex; flex-direction: column; max-width: 80%; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .my-group { align-self: flex-end; }
-        .other-group { align-self: flex-start; }
+        .my-w { align-self: flex-end; }
+        .oth-w { align-self: flex-start; }
 
-        .sender-name { font-size: 12px; font-weight: bold; color: var(--accent); margin-bottom: 4px; padding-left: 5px; }
-        
         .bubble { 
-            padding: 14px 18px; 
-            border-radius: 20px; 
+            padding: 12px 18px; 
+            border-radius: 18px; 
             font-size: 15px; 
-            line-height: 1.5; 
-            position: relative;
+            line-height: 1.4;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
-        .my-bubble { 
-            background: linear-gradient(135deg, var(--accent), #3a7bd5); 
-            color: #000; 
-            border-bottom-right-radius: 4px; 
-        }
-        .other-bubble { 
-            background: var(--msg-other); 
-            color: #fff; 
-            border-bottom-left-radius: 4px; 
-        }
+        .my-b { background: var(--accent); color: #000; border-bottom-right-radius: 2px; }
+        .oth-b { background: var(--msg-other); color: #fff; border-bottom-left-radius: 2px; }
 
-        .time { font-size: 10px; opacity: 0.4; margin-top: 5px; align-self: flex-end; }
+        .u-info { font-size: 10px; margin-top: 5px; opacity: 0.5; display: flex; gap: 10px; }
+        .u-name { font-weight: bold; color: var(--accent); margin-bottom: 4px; font-size: 12px; }
 
-        /* Индикатор набора текста */
-        #typing { font-size: 12px; color: var(--accent); font-style: italic; height: 20px; padding-left: 25px; opacity: 0; transition: 0.3s; }
-
-        /* Нижняя панель */
-        .input-area { 
+        /* Панель ввода */
+        .input-bar { 
             background: var(--panel); 
-            padding: 20px 25px; 
+            padding: 20px; 
             display: flex; 
-            gap: 15px; 
-            align-items: center; 
-            border-top: 1px solid #333;
+            gap: 12px; 
+            border-top: 1px solid #333; 
         }
         input { 
             background: #25252e; 
             border: 1px solid #444; 
             color: #fff; 
-            padding: 14px 18px; 
-            border-radius: 15px; 
+            padding: 12px; 
+            border-radius: 12px; 
             outline: none; 
-            transition: 0.3s;
-            font-size: 15px;
         }
-        input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,210,255,0.2); }
-        #nick-input { width: 120px; font-weight: bold; text-align: center; color: var(--accent); }
-        #msg-input { flex: 1; }
-
+        #n-in { width: 100px; text-align: center; color: var(--accent); font-weight: bold; }
+        #m-in { flex: 1; }
         button { 
             background: var(--accent); 
-            color: #000; 
             border: none; 
-            width: 50px; 
-            height: 50px; 
-            border-radius: 15px; 
-            cursor: pointer; 
+            padding: 0 25px; 
+            border-radius: 12px; 
             font-weight: bold; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            transition: 0.3s;
+            cursor: pointer; 
+            transition: 0.2s;
         }
-        button:hover { transform: scale(1.05); background: #fff; }
-        button:active { transform: scale(0.95); }
+        button:hover { transform: scale(1.05); }
 
-        /* Скроллбар */
-        #chat::-webkit-scrollbar { width: 6px; }
-        #chat::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-
-        /* Лог ошибок для отладки */
-        #debug-log { position: fixed; bottom: 100px; left: 20px; font-size: 10px; color: #ff4444; pointer-events: none; }
+        /* Отладка */
+        #error-log { color: #ff4444; font-size: 10px; position: fixed; bottom: 85px; left: 20px; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo-box">
-        <div class="logo">Mics</div>
+    <div class="logo">MICS</div>
+    <div id="status-box">
         <div id="status-dot"></div>
-        <div id="status-text">DISCONNECTED</div>
+        <span id="status-text">OFFLINE</span>
     </div>
-    <div style="font-size: 10px; opacity: 0.5;">v3.0 Stable</div>
 </header>
 
 <div id="chat">
-    <div class="msg-group other-group">
-        <div class="bubble other-bubble">
-            <b>Система:</b> Добро пожаловать в Mics Messenger. <br>
-            Если статус "DISCONNECTED", подождите 1 минуту (сервер на Render просыпается).
-        </div>
+    <div class="msg-wrap oth-w">
+        <div class="bubble oth-b"><b>System:</b> Добро пожаловать! Если не подключается — проверь статус сервера на Render.</div>
     </div>
 </div>
 
-<div id="typing">Кто-то печатает...</div>
+<div id="error-log"></div>
 
-<div id="debug-log"></div>
-
-<div class="input-area">
-    <input type="text" id="nick-input" placeholder="Ник" maxlength="12">
-    <input type="text" id="msg-input" placeholder="Введите сообщение..." autocomplete="off">
-    <button onclick="sendMsg()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-    </button>
+<div class="input-bar">
+    <input type="text" id="n-in" maxlength="12" placeholder="Ник">
+    <input type="text" id="m-in" placeholder="Ваше сообщение..." autocomplete="off">
+    <button onclick="send()">></button>
 </div>
 
 <script>
-    // --- НАСТРОЙКИ ---
-    const SERVER_URL = 'https://mics-server.onrender.com'; // ВСТАВЬ СЮДА СВОЮ ССЫЛКУ
-    const nickInput = document.getElementById('nick-input');
-    const msgInput = document.getElementById('msg-input');
-    const chat = document.getElementById('chat');
-    const statusDot = document.getElementById('status-dot');
-    const statusText = document.getElementById('status-text');
-    const debug = document.getElementById('debug-log');
+    /* --- ЛОГИКА MICS --- */
+    
+    // !!! ВСТАВЬ СЮДА СВОЮ ССЫЛКУ ОТ RENDER !!!
+    const SERVER_URL = 'https://mics-server.onrender.com'; 
 
-    // Генерация случайного ника, если пусто
+    const chat = document.getElementById('chat');
+    const msgInput = document.getElementById('m-in');
+    const nickInput = document.getElementById('n-in');
+    const errLog = document.getElementById('error-log');
+    
+    // Рандомный ник при старте
     nickInput.value = "User_" + Math.floor(Math.random() * 999);
 
-    // Подключение к Socket.io
+    // Подключение к серверу
     const socket = io(SERVER_URL, {
-        transports: ['websocket', 'polling'],
-        reconnectionAttempts: 10,
-        timeout: 20000
+        transports: ['websocket', 'polling'], // Пробуем все способы связи
+        reconnectionAttempts: 5
     });
 
-    // Обработка статусов
+    // Обработка подключения
     socket.on('connect', () => {
-        statusDot.style.background = "#00ff88";
-        statusDot.style.boxShadow = "0 0 10px #00ff88";
-        statusText.innerText = "ONLINE";
-        debug.innerText = "";
+        document.getElementById('status-dot').classList.add('online-dot');
+        document.getElementById('status-text').innerText = "ONLINE";
+        document.getElementById('status-text').style.color = "#00ff88";
+        errLog.innerText = "";
     });
 
     socket.on('connect_error', (err) => {
-        statusDot.style.background = "#ffcc00";
-        statusText.innerText = "RECONNECTING...";
-        debug.innerText = "Ошибка связи: " + err.message;
+        errLog.innerText = "Ошибка подключения: " + err.message;
+        document.getElementById('status-text').innerText = "CONNECTING...";
     });
-
-    // Звук уведомления
-    const snd = new Audio('https://assets.mixkit.co');
 
     // Получение сообщения
     socket.on('message', (data) => {
         const isMy = data.user === nickInput.value;
-        if (!isMy) snd.play().catch(()=>{});
-        addMessageToUI(data, isMy);
+        render(data, isMy);
     });
 
-    function sendMsg() {
+    // Функция отправки
+    function send() {
         const text = msgInput.value.trim();
-        const user = nickInput.value.trim() || "Anonym";
+        const user = nickInput.value.trim();
 
         if (text && socket.connected) {
             socket.emit('message', { user, text });
             msgInput.value = "";
         } else if (!socket.connected) {
-            alert("Нет связи с сервером. Подождите...");
+            alert("Сервер еще не проснулся. Подождите 30-60 сек.");
         }
     }
 
-    function addMessageToUI(data, isMy) {
-        const group = document.createElement('div');
-        group.className = `msg-group ${isMy ? 'my-group' : 'other-group'}`;
-
-        group.innerHTML = `
-            ${!isMy ? `<div class="sender-name">${data.user}</div>` : ''}
-            <div class="bubble ${isMy ? 'my-bubble' : 'other-bubble'}">
-                ${escapeHTML(data.text)}
-            </div>
-            <div class="time">${data.time || new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+    // Отрисовка сообщения
+    function render(data, isMy) {
+        const wrap = document.createElement('div');
+        wrap.className = `msg-wrap ${isMy ? 'my-w' : 'oth-w'}`;
+        
+        wrap.innerHTML = `
+            ${!isMy ? `<div class="u-name">${data.user}</div>` : ''}
+            <div class="bubble ${isMy ? 'my-b' : 'oth-b'}">${escape(data.text)}</div>
+            <div class="u-info"><span>${data.time || 'сейчас'}</span></div>
         `;
 
-        chat.appendChild(group);
-        chat.scrollTop = chat.scrollHeight;
+        chat.appendChild(wrap);
+        chat.scrollTop = chat.scrollHeight; // Скролл вниз
     }
 
-    // Защита от XSS (взлома через текст)
-    function escapeHTML(str) {
-        return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    // Защита от взлома через текст
+    function escape(html) {
+        return html.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
     // Отправка по Enter
-    msgInput.onkeypress = (e) => { if(e.key === 'Enter') sendMsg() };
+    msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') send(); });
 </script>
 
 </body>
