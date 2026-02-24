@@ -1,30 +1,40 @@
 const express = require('express');
 const app = express();
-const http = require('http').Server(app);
+const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
-    cors: { origin: "*" } // Разрешаем подключения с любых сайтов
+    cors: {
+        origin: "*", // Разрешаем любым сайтам подключаться к Mics
+        methods: ["GET", "POST"]
+    }
 });
 
-// Проверка работоспособности
+// Главная страница сервера
 app.get('/', (req, res) => {
-    res.send('<h1>Mics Server is Running!</h1>');
+    res.send('<h1>Mics Server V2 is Online</h1>');
 });
 
 io.on('connection', (socket) => {
-    console.log('Пользователь зашел:', socket.id);
+    console.log(`[Mics] Подключен: ${socket.id}`);
 
-    // Принимаем сообщение и пересылаем всем
+    // Обработка нового сообщения
     socket.on('message', (data) => {
-        io.emit('message', data);
+        // Добавляем серверное время к сообщению
+        const messageData = {
+            user: data.user || "Аноним",
+            text: data.text,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        // Отправляем сообщение всем, включая отправителя
+        io.emit('message', messageData);
     });
 
     socket.on('disconnect', () => {
-        console.log('Пользователь вышел');
+        console.log(`[Mics] Отключен: ${socket.id}`);
     });
 });
 
-// Render сам подставит нужный PORT
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 http.listen(PORT, '0.0.0.0', () => {
-    console.log('Mics Server запущен на порту ' + PORT);
+    console.log(`[Mics] Сервер запущен на порту ${PORT}`);
 });
